@@ -19,6 +19,12 @@ const textStyle = {
 export default function StarRating({ maxRating = 5 }) {
   const [rating, setRating] = useState(0);
 
+  //when the stars are being hovered, it stores the value of the nth star because we need to display a temporary rating and also change the number of full and empty stars,when hovering over any star.
+  // Initially, when the page loads there is no tempRating, now suppose we hover over the 3rd star, immediately it should show a rating of 3, next if move to the 5th star, it should show a rating of 5.This value is stored by tempRating state. 
+  // Or, if we have clicked on the 6th star and give a 6 rating to the movie, but now we decide to rate it 8, we can hover over the 8th star and hence tempRating will show 8, next if we decide to click on 8th star the rating is updated to 8, otherwise if we don't click on any star and don't hover the rating is back to 6.
+  const [tempRating, setTempRating] = useState(0);
+
+
   function handleRating(rating) {
     setRating(rating);
   }
@@ -29,12 +35,15 @@ export default function StarRating({ maxRating = 5 }) {
         {Array.from({ length: maxRating }, (_, i) => (
           <Star
             key={i}
-            full={i+1 <= rating}
+            //if the stars are hovered, tempRating has some value and hence there should be full stars till the nth star that is being hovered on and the rest should be empty stars.Otherwise if there is no tempRating truthy value it means the stars are not being hovered,that is either there is no rating or some rating is already given. 
+            full={tempRating ? tempRating >= i + 1: rating >= i + 1}
             onRate={() => handleRating(i + 1)}
+            onHoverIn={() => setTempRating(i + 1)}
+            onHoverOut={() => setTempRating(0)}
           />
         ))}
       </div>
-      <p style={textStyle}>{rating || ""}</p>
+      <p style={textStyle}>{tempRating || rating || ""}</p>
     </div>
   );
 }
@@ -46,9 +55,15 @@ const starStyle = {
   cursor: "pointer",
 };
 
-function Star({ onRate, full }) {
+function Star({ onRate, full, onHoverIn, onHoverOut }) {
   return (
-    <span role="button" style={starStyle} onClick={onRate}>
+    <span
+      role="button"
+      style={starStyle}
+      onClick={onRate}
+      onMouseEnter={onHoverIn}
+      onMouseLeave={onHoverOut}
+    >
       {full ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
