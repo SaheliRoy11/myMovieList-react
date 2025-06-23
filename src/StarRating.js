@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from 'prop-types';
 
 //placing the style objects outside of the component, because it does not depend on anything inside the component.Also, when the component will need to re-render these objects will not be regenerated every time.
 const containerStyle = {
@@ -10,6 +11,18 @@ const containerStyle = {
 const starContainerStyle = {
   display: "flex",
 };
+
+
+//Define prop types
+StarRating.propTypes = {
+  maxRating: PropTypes.number,
+  defaultRating: PropTypes.number,
+  color: PropTypes.string,
+  size: PropTypes.number,
+  messages: PropTypes.array,
+  className: PropTypes.string,
+  onSetRating: PropTypes.func
+}
 
 export default function StarRating({
   maxRating = 5,
