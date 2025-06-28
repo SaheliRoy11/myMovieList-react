@@ -51,15 +51,31 @@ const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+
+  //This data fetching is actually introducing side effect into the component because we are interacting with the outer world, which is not allowed in Render logic
+  fetch(
+    `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      //initially logging the data we received
+      console.log(data);
+
+      //let's change state instead of just logging the data
+      //setMovies(data.Search); //this is working fine and the list of movies is getting rendered on screen. But, if we go to the network tab, there is infinite number of fetch request being sent to the api.
+      // This is because when the component is mounted, it executes the function and sends a fetch request to the api that returns the data which changes state of 'movies', hence this change of state re-renders the component, and on re-rendering the function is executed again, thus sending fetch request to api again.This creates an infinite loop of fetching data, updating state and re-rendering the component.
+    });
+
+    //setWatched([]);//another example of infinite re-rendering
 
   return (
     <>
       <NavBar>
         <NumResults movies={movies} />
       </NavBar>
-      
+
       <Main>
         <Box>
           <MovieList movies={movies} />
@@ -118,60 +134,19 @@ function Main({ children }) {
   return <main className="main">{children}</main>;
 }
 
-
-/*
-//component for rendering list of movies
-function ListBox({ children }) {
-  const [isOpen1, setIsOpen1] = useState(true);
-
-  return (
-    <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen1((open) => !open)}
-      >
-        {isOpen1 ? "–" : "+"}
-      </button>
-      {isOpen1 && children}
-    </div>
-  );
-}
-
-//component for rendering the list of watched movies
-function WatchedBox({children}) {
-  const [isOpen2, setIsOpen2] = useState(true);
-
-  return (
-    <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen2((open) => !open)}
-      >
-        {isOpen2 ? "–" : "+"}
-      </button>
-      {isOpen2 && children}
-    </div>
-  );
-}*/
-
-
-//ListBox and WatchedBox components have the same structure and purpose, hence we create on general and reusable component with same structure, it receives children props and renders components dynamically based on some state.
-function Box({children}) {
+//ListBox and WatchedBox components had the same structure and purpose, hence we created on general and reusable component with same structure, it receives children props and renders components dynamically based on some state.
+function Box({ children }) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen((open) => !open)}
-      >
+      <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
         {isOpen ? "–" : "+"}
       </button>
       {isOpen && children}
     </div>
   );
 }
-
 
 function MovieList({ movies }) {
   return (
