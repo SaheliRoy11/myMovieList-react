@@ -53,15 +53,24 @@ const average = (arr) =>
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);//loading indicator
 
   //useEffect hook does not return anything so we don't store it in any variable.The function we pass inside is called an effect, it contains the code that is registered as a side-effect to be executed at a certain point in time.
   //The second argument we pass is a dependency array and we pass an empty array.The effect function will only run when the component is rendered initially.
   useEffect(function () {
-    fetch(
-      `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
-    )
-      .then((res) => res.json())
-      .then((data) => setMovies(data.Search));
+    async function fetchMovies() {
+      setIsLoading(true);
+      const res = await fetch(
+        `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
+      );
+      const data = await res.json();
+      setMovies(data.Search);
+      setIsLoading(false);
+
+      //console.log(movies);//logs an empty array.This is because, as we learnt that setState() is asynchronous, it does not update the state immediately after the function is called.Hence, movies is still in stale-state i.e holding it's old values, which in this case happens to be empty array.
+    }
+
+    fetchMovies();
   }, []);
 
   return (
@@ -71,9 +80,7 @@ export default function App() {
       </NavBar>
 
       <Main>
-        <Box>
-          <MovieList movies={movies} />
-        </Box>
+        <Box>{isLoading ? <Loader /> : <MovieList movies={movies} />}</Box>
 
         <Box>
           <WatchedSummary watched={watched} />
@@ -82,6 +89,10 @@ export default function App() {
       </Main>
     </>
   );
+}
+
+function Loader() {
+  return <p className="loader">Loading...</p>
 }
 
 function NavBar({ children }) {
