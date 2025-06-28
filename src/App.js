@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -54,21 +54,15 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
 
-  //This data fetching is actually introducing side effect into the component because we are interacting with the outer world, which is not allowed in Render logic
-  fetch(
-    `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
-  )
-    .then((res) => res.json())
-    .then((data) => {
-      //initially logging the data we received
-      console.log(data);
-
-      //let's change state instead of just logging the data
-      //setMovies(data.Search); //this is working fine and the list of movies is getting rendered on screen. But, if we go to the network tab, there is infinite number of fetch request being sent to the api.
-      // This is because when the component is mounted, it executes the function and sends a fetch request to the api that returns the data which changes state of 'movies', hence this change of state re-renders the component, and on re-rendering the function is executed again, thus sending fetch request to api again.This creates an infinite loop of fetching data, updating state and re-rendering the component.
-    });
-
-    //setWatched([]);//another example of infinite re-rendering
+  //useEffect hook does not return anything so we don't store it in any variable.The function we pass inside is called an effect, it contains the code that is registered as a side-effect to be executed at a certain point in time.
+  //The second argument we pass is a dependency array and we pass an empty array.The effect function will only run when the component is rendered initially.
+  useEffect(function () {
+    fetch(
+      `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
+    )
+      .then((res) => res.json())
+      .then((data) => setMovies(data.Search));
+  }, []);
 
   return (
     <>
