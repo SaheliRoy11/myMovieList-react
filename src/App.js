@@ -53,21 +53,33 @@ const average = (arr) =>
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);//loading indicator
+  const [isLoading, setIsLoading] = useState(false); //loading indicator
+  const [error, setError] = useState(""); //indicating if there is an error currently.
+  const query="siuw";//random movie name
 
-  //useEffect hook does not return anything so we don't store it in any variable.The function we pass inside is called an effect, it contains the code that is registered as a side-effect to be executed at a certain point in time.
-  //The second argument we pass is a dependency array and we pass an empty array.The effect function will only run when the component is rendered initially.
   useEffect(function () {
     async function fetchMovies() {
-      setIsLoading(true);
-      const res = await fetch(
-        `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=interstellar`
-      );
-      const data = await res.json();
-      setMovies(data.Search);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
 
-      //console.log(movies);//logs an empty array.This is because, as we learnt that setState() is asynchronous, it does not update the state immediately after the function is called.Hence, movies is still in stale-state i.e holding it's old values, which in this case happens to be empty array.
+        const res = await fetch(`http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=${query}`);
+
+        //error in fetching data
+        if (!res.ok)
+          throw new Error("Something went wrong with fetching movies");
+
+        const data = await res.json();
+
+        //no movie found
+        if(data.Response === 'False') 
+          throw new Error('Movie not found');
+
+        setMovies(data.Search);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     fetchMovies();
@@ -80,7 +92,11 @@ export default function App() {
       </NavBar>
 
       <Main>
-        <Box>{isLoading ? <Loader /> : <MovieList movies={movies} />}</Box>
+        <Box>
+          {isLoading && <Loader />}
+          {!isLoading && !error && <MovieList movies={movies} />}
+          {error && <ErrorMessage message={error} />}
+        </Box>
 
         <Box>
           <WatchedSummary watched={watched} />
@@ -92,7 +108,16 @@ export default function App() {
 }
 
 function Loader() {
-  return <p className="loader">Loading...</p>
+  return <p className="loader">Loading...</p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>⛔</span>
+      {message}
+    </p>
+  );
 }
 
 function NavBar({ children }) {
