@@ -51,16 +51,17 @@ const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
+  const [query, setQuery] = useState("");//user input of movie name
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false); //loading indicator
   const [error, setError] = useState(""); //indicating if there is an error currently.
-  const query="siuw";//random movie name
 
   useEffect(function () {
     async function fetchMovies() {
       try {
         setIsLoading(true);
+        setError('');//reset error if incase it is holding value from previous render
 
         const res = await fetch(`http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=${query}`);
 
@@ -82,12 +83,23 @@ export default function App() {
       }
     }
 
+    //On initial render it gives 'Movie not found' error, because the value of query state is '' initially, hence after fetching data from api, data.Response === 'False'. So, we prevent fetching data, if length of characters in movie name to be searched is less than 3.
+    if(query.length < 3) {
+      //if we query a movie name 'int', it can have list of movie names or error as a response of sending fetch request to api.But, now if we remove 't' from query name of movie, the length is 2 i.e. 'in'.Hence, fetchMovies() will not be called now and either the movies state or the error state will be holding values from the last render. We dont want those pieces of state to be rendered on UI for current state of query, therefore we reset the values of those pieces of state. 
+      setMovies([]);
+      setError('');
+      return;
+    }
+    
     fetchMovies();
-  }, []);
+  }, 
+  [query] //synchronize with query state
+);
 
   return (
     <>
       <NavBar>
+        <Search query={query} setQuery={setQuery}/>
         <NumResults movies={movies} />
       </NavBar>
 
@@ -124,7 +136,6 @@ function NavBar({ children }) {
   return (
     <nav className="nav-bar">
       <Logo />
-      <Search />
       {children}
     </nav>
   );
@@ -139,8 +150,7 @@ function Logo() {
   );
 }
 
-function Search() {
-  const [query, setQuery] = useState("");
+function Search({query, setQuery}) {
   return (
     <input
       className="search"
