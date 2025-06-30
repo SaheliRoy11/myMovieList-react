@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import StarRating from "./StarRating";
 
 const tempMovieData = [
   {
@@ -234,12 +235,97 @@ function Movie({ movie, onSelectMovie }) {
 }
 
 function MovieDetails({ selectedId, onCloseMovie }) {
+  const [movie, setMovie] = useState({});
+  const [error, setError] = useState(""); //indicating if there is an error currently.
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    Title: title,
+    Poster: poster,
+    Runtime: runtime,
+    imdbRating,
+    Plot: plot,
+    Released: released,
+    Actors: actors,
+    Director: director,
+    Genre: genre,
+  } = movie;
+
+  //whenever this component will mount we want to fetch data of the selected movie
+  useEffect(
+    function () {
+      async function getMovieDetails() {
+        try {
+          setIsLoading(true);
+          setError(""); //reset error if incase it is holding value from previous render
+
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&i=${selectedId}`
+          );
+
+          //error in fetching data
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movie details");
+
+          const data = await res.json();
+
+          //no movie found
+          if (data.Response === "False") throw new Error("Movie not found");
+
+          setMovie(data);
+          setIsLoading(false);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      getMovieDetails();
+    },
+    //When we used [] dependency array initially and selected another movie, while details of a movie is being rendered, there is no change showing the details of the currently selected movie, rather the previously selected movie details is still there.But if we click on the back button and then select another movie it is working fine.This is happening because when we select another movie, the MovieDetails component is present in the same position in the tree, only a new selectedId prop value is passed to it.Hence the useEffect function does not execute again.But, in case of using the back button, the MovieDetails component is unmounted, on clicking another movie the component is freshly mounted and hence showing the movie details correctly.
+    //Therefore, to fix this behaviour, we synchronize the effect with selectedId prop.So, whenever a new value of selectedId is received the effect function is executed.
+    [selectedId]
+  );
+
   return (
     <div className="details">
-      <button className="btn-back" onClick={onCloseMovie}>
-        &larr;
-      </button>
-      {selectedId}
+      {isLoading && <Loader />}
+      {!isLoading && !error && (
+        <>
+          <header>
+            <button className="btn-back" onClick={onCloseMovie}>
+              &larr;
+            </button>
+
+            <img src={poster} alt={`Poster of ${movie} movie`} />
+
+            <div className="details-overview">
+              <h2>{title}</h2>
+              <p>
+                {released} &bull; {runtime}
+              </p>
+              <p>{genre}</p>
+              <p>
+                <span>⭐</span>
+                {imdbRating} IMDb Rating
+              </p>
+            </div>
+          </header>
+
+          <section>
+            <div className="rating">
+              <StarRating maxRating={10} size={24} />
+            </div>
+            <p>
+              <em>{plot}</em>
+            </p>
+            <p>Starring {actors}</p>
+            <p>Directed by {director}</p>
+          </section>
+        </>
+      )}
+      {error && <ErrorMessage message={error} />}
     </div>
   );
 }
