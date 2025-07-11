@@ -118,6 +118,8 @@ export default function App() {
         return;
       }
 
+      //if a movie details is already opened then close it before searching new movies
+      handleCloseMovie();
       fetchMovies();
 
       //clean up data fetching
@@ -296,6 +298,24 @@ function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
     onAddWatched(newWatchedMovie);
     onCloseMovie(); //show the list of watched movies after adding a new movie to the watched list
   }
+
+  //listen to Escape keypress globally
+  useEffect(
+    function() {
+      function callback(e) {
+        if(e.code === 'Escape') {
+          onCloseMovie();
+          console.log('Closing');
+        }
+      }
+
+      document.addEventListener('keydown', callback);
+
+      return function() {
+        document.removeEventListener('keydown', callback);
+      }
+    }, [onCloseMovie]);
+
 
   //whenever this component will mount we want to fetch data of the selected movie
   useEffect(
