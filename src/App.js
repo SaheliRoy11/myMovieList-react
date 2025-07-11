@@ -77,13 +77,20 @@ export default function App() {
 
   useEffect(
     function () {
+
+      const controller = new AbortController();//browser API
+
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setError(""); //reset error if incase it is holding value from previous render
 
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY}&s=${query}`,
+            {
+              //connect the AbortController with the fetch function
+              signal: controller.signal
+            } 
           );
 
           //error in fetching data
@@ -97,7 +104,9 @@ export default function App() {
 
           setMovies(data.Search);
         } catch (err) {
-          setError(err.message);
+          if(err.name !== 'AbortError') {
+            setError(err.message);  
+          }
         } finally {
           setIsLoading(false);
         }
@@ -110,6 +119,11 @@ export default function App() {
       }
 
       fetchMovies();
+
+      //clean up data fetching
+      return function() {
+        controller.abort();
+      }
     },
     [query] //synchronize with query state
   );
@@ -317,6 +331,17 @@ function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
     },
     [selectedId]
   );
+
+  //change page title to the title of the movie which is selected to view details
+  useEffect(function() {
+    if(!title) return;//initially the title is undefined, later when the value of title is correctly fetched the component is re-rendered and the correct value of title is used
+
+    document.title = `Movie | ${title}`;
+
+    return function() {//cleanup function 
+      document.title = 'myMovieList';
+    }
+  }, [title]);
 
   return (
     <div className="details">
