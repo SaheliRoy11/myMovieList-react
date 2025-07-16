@@ -254,6 +254,19 @@ function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
   const [error, setError] = useState(""); //indicating if there is an error currently.
   const [isLoading, setIsLoading] = useState(false);//loading indicator while details of selected movie being fetched from api
   const [userRating, setUserRating] = useState("");//if user has set a rating of the current selected movie on StarRating component, use setUserRating to get access to the value set by user on that component instance and set it here into userRating.
+
+  const countRef = useRef(0);//count no. of times the user has rated the movie before adding it to watched list of movies
+
+  //update the Ref using useEffect, remember we are not allowed to mutate the Ref in render logic
+  useEffect(function() {
+    //The update should happen only when there is a userRating, because the effect will run on mount too and we don't want that.
+    if(userRating) {
+      countRef.current++ ;
+    }
+  }, 
+  [userRating]//update the Ref each time the user rates the movie
+  );
+
   const isWatched = WatchedMovies.map((movie) => movie.imdbID).includes(
     selectedId
   );
@@ -282,6 +295,7 @@ function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
       userRating,
+      countRatingDecisions: countRef.current
     };
     onAddWatched(newWatchedMovie);
     onCloseMovie(); //show the list of watched movies after adding a new movie to the watched list
