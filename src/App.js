@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
 import { useMovies } from "./useMovies";
 import { useLocalStorageState } from "./useLocalStorageState";
+import { useKey } from "./useKey";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
   const [query, setQuery] = useState(""); //user input of movie name
-  const {movies, isLoading, error} = useMovies(query);//using custom hook
-  const [watched, setWatched] = useLocalStorageState([], 'watched');//using custom hook
+  const { movies, isLoading, error } = useMovies(query); //using custom hook
+  const [watched, setWatched] = useLocalStorageState([], "watched"); //using custom hook
   const [selectedId, setSelectedId] = useState(null); //selected movie id
 
   function handleSelectMovie(id) {
@@ -102,23 +103,13 @@ function Logo() {
 function Search({ query, setQuery }) {
   const inputEl = useRef(null); //we want to work with a DOM element, so the initial value of the current property is null
 
-  useEffect(function () {
-    function callback(e) {
+  useKey("Enter", function () {
+    //if the element is already focused then don't do anything
+    if (document.activeElement === inputEl.current) return;
 
-      //if the element is already focused then don't do anything
-      if(document.activeElement === inputEl.current)
-        return;
-
-      if (e.code === "Enter") {
-        inputEl.current.focus(); //inputEl.current is the DOM element itself
-        setQuery("");
-      }
-    }
-
-    document.addEventListener("keydown", callback);
-
-    return () => document.removeEventListener("keydown", callback);
-  }, [setQuery]);
+    inputEl.current.focus(); //inputEl.current is the DOM element itself
+    setQuery("");
+  });
 
   return (
     <input
@@ -185,26 +176,29 @@ function Movie({ movie, onSelectMovie }) {
 
 function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
   const [movie, setMovie] = useState({});//selected movie 
-  const [error, setError] = useState(""); //indicating if there is an error currently.
-  const [isLoading, setIsLoading] = useState(false);//loading indicator while details of selected movie being fetched from api
-  const [userRating, setUserRating] = useState("");//if user has set a rating of the current selected movie on StarRating component, use setUserRating to get access to the value set by user on that component instance and set it here into userRating.
+  const [error, setError] = useState(""); //indicating if there is an error currently. 
+  const [isLoading, setIsLoading] = useState(false); //loading indicator while details of selected movie being fetched from api
+  const [userRating, setUserRating] = useState(""); //if user has set a rating of the current selected movie on StarRating component, use setUserRating to get access to the value set by user on that component instance and set it here into userRating.
 
-  const countRef = useRef(0);//count no. of times the user has rated the movie before adding it to watched list of movies
+  const countRef = useRef(0); //count no. of times the user has rated the movie before adding it to watched list of movies
 
   //update the Ref using useEffect, remember we are not allowed to mutate the Ref in render logic
-  useEffect(function() {
-    //The update should happen only when there is a userRating, because the effect will run on mount too and we don't want that.
-    if(userRating) {
-      countRef.current++ ;
-    }
-  }, 
-  [userRating]//update the Ref each time the user rates the movie
+  useEffect(
+    function () {
+      //The update should happen only when there is a userRating, because the effect will run on mount too and we don't want that.
+      if (userRating) {
+        countRef.current++;
+      }
+    },
+    [userRating] //update the Ref each time the user rates the movie
   );
 
   const isWatched = WatchedMovies.map((movie) => movie.imdbID).includes(
     selectedId
   );
-  const watchedUserRating = WatchedMovies.find((movie) => movie.imdbID === selectedId)?.userRating;//if the movie has already been watched then find it's rating.Also we have used optional chaining because if we haven't watched the movie the find() will return nothing.
+  const watchedUserRating = WatchedMovies.find(
+    (movie) => movie.imdbID === selectedId
+  )?.userRating; //if the movie has already been watched then find it's rating.Also we have used optional chaining because if we haven't watched the movie the find() will return nothing.
 
   const {
     Title: title,
@@ -229,30 +223,14 @@ function MovieDetails({selectedId, onCloseMovie, onAddWatched, WatchedMovies}) {
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
       userRating,
-      countRatingDecisions: countRef.current
+      countRatingDecisions: countRef.current,
     };
     onAddWatched(newWatchedMovie);
     onCloseMovie(); //show the list of watched movies after adding a new movie to the watched list
   }
 
   //listen to Escape keypress globally
-  useEffect(
-    function () {
-      function callback(e) {
-        if (e.code === "Escape") {
-          onCloseMovie();
-          console.log("Closing");
-        }
-      }
-
-      document.addEventListener("keydown", callback);
-
-      return function () {
-        document.removeEventListener("keydown", callback);
-      };
-    },
-    [onCloseMovie]
-  );
+  useKey("Escape", onCloseMovie);
 
   //whenever this component will mount we want to fetch data of the selected movie
   useEffect(
